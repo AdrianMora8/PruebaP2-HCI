@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CaféU · Prototipo v1</title>
+<style>
+  :root { --ink:#1f1a17; --bg:#faf6f1; --card:#fff; --line:#d9cfc4; --brand:#6f4e37; --brand-ink:#fff; --ok:#1b6e3a; --warn:#8a5a00; --err:#b00020; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.4 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header { background:var(--brand); color:var(--brand-ink); padding:12px 16px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:2; }
+  header h1 { font-size:18px; margin:0; }
+  main { max-width:480px; margin:0 auto; padding:16px; }
+  h2 { font-size:20px; margin:8px 0 12px; }
+  h2:focus { outline:3px solid #1a5fd0; outline-offset:3px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:10px; }
+  .row { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .muted { color:#5b524b; font-size:14px; }
+  button { font:inherit; border:2px solid var(--brand); background:#fff; color:var(--brand); border-radius:8px; padding:10px 14px; min-height:44px; cursor:pointer; }
+  button.primary { background:var(--brand); color:var(--brand-ink); }
+  button:disabled { opacity:.55; cursor:not-allowed; }
+  button:focus-visible, input:focus-visible, a:focus-visible, dialog:focus-visible { outline:3px solid #1a5fd0; outline-offset:2px; }
+  .qty { display:flex; align-items:center; gap:8px; }
+  .qty button { min-width:44px; padding:6px; }
+  .tag { display:inline-block; font-size:12px; border:1px solid var(--warn); color:var(--warn); border-radius:12px; padding:1px 8px; margin-right:4px; }
+  .tag.none { border-color:var(--ok); color:var(--ok); }
+  .banner { border-left:6px solid; padding:10px 12px; border-radius:6px; margin:10px 0; background:#fff; }
+  .banner.err { border-color:var(--err); } .banner.warn { border-color:var(--warn); } .banner.ok { border-color:var(--ok); }
+  .total { font-size:20px; font-weight:700; }
+  .pill { display:inline-flex; gap:6px; align-items:center; padding:4px 10px; border-radius:14px; border:2px solid; font-weight:600; }
+  .pill.pend { color:var(--warn); } .pill.ok { color:var(--ok); } .pill.err { color:var(--err); }
+  .cat { margin:14px 0 6px; font-size:16px; }
+  dialog { border:2px solid var(--brand); border-radius:12px; max-width:360px; }
+  [hidden] { display:none !important; }
+  .sr { position:absolute; left:-9999px; }
+  nav.tabs { display:flex; gap:6px; flex-wrap:wrap; }
+  nav.tabs button { padding:6px 10px; min-height:36px; font-size:14px; }
+  nav.tabs [aria-current="page"] { background:var(--brand); color:#fff; }
+  @media (max-width:380px) { main { padding:12px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>CaféU</h1>
+  <nav class="tabs" aria-label="Secciones">
+    <button data-go="inicio">Inicio</button>
+    <button data-go="menu">Menú</button>
+    <button data-go="pedido">Mi pedido (<span id="count">0</span>)</button>
+  </nav>
+</header>
+<main>
+  <div id="live" class="sr" role="status" aria-live="polite"></div>
+  <div id="alert" class="sr" role="alert"></div>
+
+  <section id="s-inicio" data-screen>
+    <h2 tabindex="-1">Bienvenido a CaféU</h2>
+    <p>Pide tu café o tu comida entre clases y retira sin hacer fila.</p>
+    <div id="budget-note" class="banner warn" hidden></div>
+    <button class="primary" data-go="menu">Ver menú</button>
+  </section>
+
+  <section id="s-menu" data-screen hidden>
+    <h2 tabindex="-1">Menú</h2>
+    <div id="menu"></div>
+  </section>
+
+  <section id="s-detalle" data-screen hidden>
+    <h2 tabindex="-1" id="d-title">Detalle</h2>
+    <div class="card" id="d-body"></div>
+    <div class="row">
+      <button data-go="menu">Volver al menú</button>
+      <button class="primary" id="d-add">Agregar al pedido</button>
+    </div>
+  </section>
+
+  <section id="s-pedido" data-screen hidden>
+    <h2 tabindex="-1">Mi pedido</h2>
+    <div id="empty" class="card" hidden>Tu pedido está vacío. <button data-go="menu">Ir al menú</button></div>
+    <ul id="items" style="list-style:none;padding:0;margin:0"></ul>
+    <div id="budget-bar" class="banner warn" hidden></div>
+    <div class="card" id="summary">
+      <div class="row"><span>Subtotal</span><span id="sub">$0,00</span></div>
+      <div class="row"><span class="total">Total</span><span class="total" id="total" aria-live="polite">$0,00</span></div>
+    </div>
+    <div id="allergen" class="banner warn" role="group" aria-labelledby="al-t" hidden>
+      <strong id="al-t">Aviso de alérgenos</strong>
+      <p id="al-txt" style="margin:6px 0"></p>
+      <label><input type="checkbox" id="al-ok"> Leí el aviso de alérgenos</label>
+      <div style="margin-top:8px"><button id="al-fix">Corregir pedido</button></div>
+    </div>
+    <div id="status" aria-live="polite"></div>
+    <div class="row" style="margin-top:8px">
+      <button data-go="menu">Seguir comprando</button>
+      <button class="primary" id="confirm">Confirmar pedido</button>
+    </div>
+  </section>
+
+  <section id="s-conf" data-screen hidden>
+    <h2 tabindex="-1">Pedido recibido</h2>
+    <div class="card">
+      <p><span class="pill ok" id="conf-pill">✔ Confirmado</span></p>
+      <p>Código del pedido: <strong id="code"></strong></p>
+      <p class="muted">Retira en la barra mostrando este código.</p>
+    </div>
+    <div class="card"><strong>Resumen</strong><div id="conf-items"></div><div class="row total"><span>Total</span><span id="conf-total"></span></div></div>
+    <button class="primary" id="again">Hacer otro pedido</button>
+  </section>
+
+  <dialog id="dlg" aria-labelledby="dlg-t" aria-describedby="dlg-d">
+    <h3 id="dlg-t" style="margin-top:0">Quitar producto</h3>
+    <p id="dlg-d"></p>
+    <div class="row"><button id="dlg-no">Cancelar</button><button class="primary" id="dlg-yes">Sí, quitar</button></div>
+  </dialog>
+</main>
+<script>
+const params = new URLSearchParams(location.search);
+const TARJETA = params.get('t') || '';
+const BUDGET = TARJETA === '05' ? 4.25 : null;           // tarjeta 05: presupuesto
+const FLAKY = TARJETA === '06' || params.get('red') === 'mala'; // tarjeta 06: red inestable
+
+const PRODUCTS = [
+  { id:'cafe', name:'Café americano', cat:'Bebidas', price:1.00, al:[], desc:'Café filtrado, 8 oz.' },
+  { id:'capu', name:'Capuchino', cat:'Bebidas', price:1.50, al:['lácteos'], desc:'Espresso con leche espumada.' },
+  { id:'jugo', name:'Jugo natural', cat:'Bebidas', price:1.25, al:[], desc:'Fruta de temporada.' },
+  { id:'sand', name:'Sánduche de pollo', cat:'Comidas', price:2.25, al:['gluten','huevo'], desc:'Pan, pollo, lechuga y mayonesa.' },
+  { id:'pan',  name:'Pan de yuca', cat:'Comidas', price:0.75, al:['lácteos'], desc:'Con queso, recién horneado.' },
+  { id:'brow', name:'Brownie', cat:'Comidas', price:1.50, al:['gluten','huevo','frutos secos'], desc:'Chocolate y nueces.' },
+];
+const money = n => '$' + n.toFixed(2).replace('.', ',');
+const $ = id => document.getElementById(id);
+let cart = {};            // id -> cantidad
+let current = null;       // producto en detalle
+let busy = false;
+
+function announce(msg, urgent) { const el = $(urgent ? 'alert' : 'live'); el.textContent = ''; setTimeout(() => el.textContent = msg, 30); }
+function total() { return Object.entries(cart).reduce((s, [id, q]) => s + PRODUCTS.find(p => p.id === id).price * q, 0); }
+function count() { return Object.values(cart).reduce((a, b) => a + b, 0); }
+
+function show(name, focusHeading = true) {
+  document.querySelectorAll('[data-screen]').forEach(s => s.hidden = s.id !== 's-' + name);
+  document.querySelectorAll('nav.tabs button').forEach(b => { if (b.dataset.go === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  if (name === 'pedido') renderCart();
+  if (focusHeading) $('s-' + name).querySelector('h2').focus();
+}
+document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) show(g.dataset.go); });
+
+// ---- menú
+function renderMenu() {
+  let h = '';
+  ['Bebidas', 'Comidas'].forEach(cat => {
+    h += `<h3 class="cat">${cat}</h3>`;
+    PRODUCTS.filter(p => p.cat === cat).forEach(p => {
+      h += `<div class="card"><div class="row"><div><strong>${p.name}</strong><div class="muted">${money(p.price)}</div></div>
+        <div><button data-det="${p.id}" aria-label="Ver detalle de ${p.name}">Detalle</button>
+        <button class="primary" data-add="${p.id}" aria-label="Agregar ${p.name} al pedido">Agregar</button></div></div></div>`;
+    });
+  });
+  $('menu').innerHTML = h;
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-add]'); if (a) addItem(a.dataset.add);
+  const d = e.target.closest('[data-det]'); if (d) openDetail(d.dataset.det);
+});
+function addItem(id) {
+  cart[id] = (cart[id] || 0) + 1; update();
+  announce(`${PRODUCTS.find(p => p.id === id).name} agregado. Total ${money(total())}.`);
+}
+function openDetail(id) {
+  current = PRODUCTS.find(p => p.id === id);
+  $('d-title').textContent = current.name;
+  const al = current.al.length ? current.al.map(a => `<span class="tag">⚠ ${a}</span>`).join('') : '<span class="tag none">✔ Sin alérgenos declarados</span>';
+  $('d-body').innerHTML = `<p>${current.desc}</p><p class="muted">Precio: ${money(current.price)}</p><p><strong>Alérgenos:</strong> ${al}</p>`;
+  show('detalle');
+}
+$('d-add').onclick = () => { addItem(current.id); show('pedido'); };
+
+// ---- carrito
+function update() { $('count').textContent = count(); }
+function renderCart() {
+  const ids = Object.keys(cart);
+  $('empty').hidden = ids.length > 0;
+  $('items').innerHTML = ids.map(id => {
+    const p = PRODUCTS.find(x => x.id === id), q = cart[id];
+    return `<li class="card"><div class="row"><strong>${p.name}</strong><span>${money(p.price * q)}</span></div>
+      <div class="row" style="margin-top:8px"><div class="qty" role="group" aria-label="Cantidad de ${p.name}">
+        <button data-dec="${id}" aria-label="Disminuir cantidad de ${p.name}">−</button><span aria-live="polite">${q}</span>
+        <button data-inc="${id}" aria-label="Aumentar cantidad de ${p.name}">+</button></div>
+        <button data-del="${id}" aria-label="Quitar ${p.name}">Quitar</button></div></li>`;
+  }).join('');
+  const t = total();
+  $('sub').textContent = money(t); $('total').textContent = money(t);
+  // presupuesto (tarjeta 05)
+  const bb = $('budget-bar');
+  if (BUDGET !== null) {
+    bb.hidden = false;
+    const left = BUDGET - t;
+    bb.className = 'banner ' + (left < 0 ? 'err' : 'warn');
+    bb.innerHTML = left < 0
+      ? `<strong>Superaste tu presupuesto en ${money(-left)}.</strong> Presupuesto: ${money(BUDGET)}. <button id="adjust">Ajustar pedido</button>`
+      : `Presupuesto ${money(BUDGET)}. Te quedan ${money(left)}.`;
+    const adj = $('adjust'); if (adj) adj.onclick = () => { const first = document.querySelector('[data-dec]'); if (first) first.focus(); announce('Ajusta las cantidades; tu pedido se mantiene.'); };
+  }
+  // alérgenos
+  const als = [...new Set(ids.flatMap(id => PRODUCTS.find(p => p.id === id).al))];
+  const box = $('allergen');
+  box.hidden = als.length === 0;
+  if (als.length) $('al-txt').textContent = 'Tu pedido contiene: ' + als.join(', ') + '. Revisa que sea seguro para ti antes de confirmar.';
+  syncConfirm();
+}
+function syncConfirm() {
+  const needAck = !$('allergen').hidden && !$('al-ok').checked;
+  $('confirm').disabled = busy || count() === 0 || needAck;
+  $('confirm').setAttribute('aria-disabled', $('confirm').disabled);
+}
+$('al-ok').onchange = syncConfirm;
+$('al-fix').onclick = () => { const f = document.querySelector('[data-dec]'); if (f) f.focus(); announce('Puedes corregir tu pedido, no se perdió nada.'); };
+
+let pendingDel = null, lastFocusIndex = 0;
+document.addEventListener('click', e => {
+  const inc = e.target.closest('[data-inc]'), dec = e.target.closest('[data-dec]'), del = e.target.closest('[data-del]');
+  if (inc) { cart[inc.dataset.inc]++; changed(inc.dataset.inc, 'inc'); }
+  if (dec) { const id = dec.dataset.dec; if (cart[id] > 1) { cart[id]--; changed(id, 'dec'); } else askDelete(id, dec); }
+  if (del) askDelete(del.dataset.del, del);
+});
+function changed(id, which) {
+  update(); renderCart();
+  const sel = `[data-${which}="${id}"]`; const b = document.querySelector(sel); if (b) b.focus();
+  announce(`${PRODUCTS.find(p => p.id === id).name}: ${cart[id]}. Total actualizado: ${money(total())}.`);
+}
+function askDelete(id, trigger) {
+  pendingDel = id;
+  const keys = Object.keys(cart); lastFocusIndex = keys.indexOf(id);
+  $('dlg-d').textContent = `¿Quitar ${PRODUCTS.find(p => p.id === id).name} de tu pedido?`;
+  $('dlg').showModal(); $('dlg-no').focus();
+}
+$('dlg-no').onclick = () => { $('dlg').close(); const b = document.querySelector(`[data-del="${pendingDel}"]`); if (b) b.focus(); };
+$('dlg').addEventListener('cancel', () => setTimeout(() => { const b = document.querySelector(`[data-del="${pendingDel}"]`); if (b) b.focus(); }));
+$('dlg-yes').onclick = () => {
+  const name = PRODUCTS.find(p => p.id === pendingDel).name;
+  delete cart[pendingDel]; $('dlg').close(); update(); renderCart();
+  const keys = Object.keys(cart);
+  if (keys.length) { const target = keys[Math.min(lastFocusIndex, keys.length - 1)]; document.querySelector(`[data-del="${target}"]`).focus(); }
+  else $('s-pedido').querySelector('h2').focus();
+  announce(`${name} quitado. Total ${money(total())}.`);
+};
+
+// ---- confirmar (pendiente / confirmado / no confirmado)
+function setStatus(kind, msg) {
+  const map = { pend:['⏳','Pendiente'], err:['✖','No confirmado'] };
+  $('status').innerHTML = kind ? `<div class="banner ${kind === 'err' ? 'err' : 'warn'}"><span class="pill ${kind}">${map[kind][0]} ${map[kind][1]}</span> ${msg}</div>` : '';
+}
+let attempts = 0;
+$('confirm').onclick = () => {
+  if ($('confirm').disabled) return;       // evita doble pulsación
+  busy = true; syncConfirm(); $('confirm').textContent = 'Confirmando…';
+  $('s-pedido').setAttribute('aria-busy', 'true');
+  setStatus('pend', 'Estamos confirmando tu pedido. Aún no está confirmado.');
+  announce('Confirmando tu pedido. Aún no está confirmado.');
+  attempts++;
+  setTimeout(() => {
+    const fail = FLAKY && attempts % 2 === 1;      // red inestable: falla el primer intento
+    busy = false; $('confirm').textContent = fail ? 'Reintentar' : 'Confirmar pedido';
+    $('s-pedido').removeAttribute('aria-busy');
+    if (fail) { setStatus('err', 'No se pudo confirmar. Tu pedido sigue guardado. Intenta de nuevo.'); announce('No se pudo confirmar el pedido. Tu pedido sigue guardado.', true); syncConfirm(); }
+    else { setStatus(null); finish(); }
+  }, 1200);
+};
+function finish() {
+  const code = 'CU-' + String(Math.floor(1000 + Math.random() * 9000));
+  $('code').textContent = code;
+  $('conf-items').innerHTML = Object.entries(cart).map(([id, q]) => { const p = PRODUCTS.find(x => x.id === id); return `<div class="row"><span>${p.name} × ${q}</span><span>${money(p.price * q)}</span></div>`; }).join('');
+  $('conf-total').textContent = money(total());
+  show('conf'); announce(`Pedido recibido. Código ${code}. Total ${money(total())}.`);
+}
+$('again').onclick = () => { cart = {}; attempts = 0; $('al-ok').checked = false; update(); show('menu'); };
+
+// ---- inicio
+if (BUDGET !== null) { const n = $('budget-note'); n.hidden = false; n.textContent = 'Tu presupuesto es de ' + money(BUDGET) + '. Te avisaremos si lo superas.'; }
+renderMenu(); update(); show('inicio', false);
+</script>
+</body>
+</html>
