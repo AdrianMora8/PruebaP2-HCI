@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard UX · Prototipo v1</title>
+<style>
+  :root { --ink:#16202b; --bg:#f3f6fa; --card:#fff; --line:#ccd6e0; --brand:#1f4e8c; --ok:#1b6e3a; --warn:#8a5a00; --err:#b00020; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px/1.4 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header { background:var(--brand); color:#fff; padding:12px 16px; }
+  header h1 { margin:0; font-size:18px; }
+  main { max-width:560px; margin:0 auto; padding:16px; }
+  h2 { font-size:20px; margin:12px 0; }
+  h2:focus { outline:3px solid #d06a00; outline-offset:3px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:12px; }
+  button { font:inherit; border:2px solid var(--brand); background:#fff; color:var(--brand); border-radius:8px; padding:10px 14px; min-height:44px; cursor:pointer; }
+  button.primary { background:var(--brand); color:#fff; }
+  button:disabled, button[aria-disabled="true"] { opacity:.55; cursor:not-allowed; }
+  :focus-visible { outline:3px solid #d06a00; outline-offset:2px; }
+  /* Stepper: el paso activo se distingue por texto, forma (relleno + borde grueso) y aria-current, no solo por color */
+  ol.stepper { list-style:none; margin:0 0 8px; padding:0; display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; }
+  ol.stepper li button { width:100%; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 2px; min-height:60px; font-size:12px; border-width:2px; }
+  ol.stepper .n { width:26px; height:26px; border-radius:50%; border:2px solid currentColor; display:inline-grid; place-items:center; font-weight:700; }
+  ol.stepper [aria-current="step"] { background:var(--brand); color:#fff; border-width:4px; }
+  ol.stepper .done .n::after { content:"✔"; }
+  ol.stepper .done .n span { display:none; }
+  .current-label { font-weight:700; margin:4px 0 10px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .item { border:2px solid var(--line); border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .item.missing { border-color:var(--err); }
+  .item label { display:flex; gap:8px; align-items:center; font-weight:600; }
+  .item input[type=checkbox] { width:22px; height:22px; }
+  .sv { font-size:12px; color:#4b5865; }
+  .banner { border-left:6px solid; padding:10px 12px; border-radius:6px; margin:10px 0; background:#fff; }
+  .banner.err { border-color:var(--err); } .banner.ok { border-color:var(--ok); } .banner.warn { border-color:var(--warn); }
+  .bar { height:14px; background:#dfe7ef; border-radius:8px; overflow:hidden; }
+  .bar > div { height:100%; background:var(--brand); width:0; transition:width .2s; }
+  label.f { display:block; font-weight:600; margin-top:10px; }
+  input[type=text], select, textarea, input[type=number] { width:100%; font:inherit; padding:10px; border:2px solid var(--line); border-radius:8px; min-height:44px; }
+  input[aria-invalid="true"] { border-color:var(--err); }
+  .err-msg { color:var(--err); font-size:14px; margin-top:4px; }
+  .row { display:flex; gap:8px; justify-content:space-between; margin-top:12px; flex-wrap:wrap; }
+  .sr { position:absolute; left:-9999px; }
+  [hidden] { display:none !important; }
+  ul.sum { padding-left:18px; margin:6px 0; }
+  @media (max-width:380px) { main { padding:10px; } .grid { grid-template-columns:1fr; } ol.stepper li button { font-size:11px; } }
+</style>
+</head>
+<body>
+<header><h1>Dashboard UX · Prueba de usabilidad</h1></header>
+<main>
+  <div id="live" class="sr" role="status" aria-live="polite"></div>
+  <nav aria-label="Etapas de la prueba"><ol class="stepper" id="stepper"></ol></nav>
+  <p class="current-label" id="cur"></p>
+  <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso total" id="pbar"><div id="pfill"></div></div>
+  <p id="ptxt" class="sv">Progreso: 0 %</p>
+  <div id="msg" role="alert"></div>
+
+  <section data-step="0">
+    <h2 tabindex="-1">Procedimiento de la prueba</h2>
+    <div class="card">
+      <ol>
+        <li>Recibe al participante y explica que no hay respuestas incorrectas.</li>
+        <li>Marca los ítems del checklist antes de empezar.</li>
+        <li>Registra tiempo, errores y observaciones con un código de participante.</li>
+        <li>Revisa el resumen y cierra la sesión.</li>
+      </ol>
+      <label><input type="checkbox" id="proc-ok"> Leí el procedimiento</label>
+    </div>
+  </section>
+
+  <section data-step="1" hidden>
+    <h2 tabindex="-1">Checklist previo</h2>
+    <p class="sv">Los ítems marcados con * son obligatorios. Los cambios se guardan automáticamente.</p>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section data-step="2" hidden>
+    <h2 tabindex="-1">Registro de resultados</h2>
+    <div class="card">
+      <label class="f" for="cod">Código de participante (formato P-07)</label>
+      <input type="text" id="cod" inputmode="text" autocomplete="off" aria-describedby="cod-h cod-e">
+      <div class="sv" id="cod-h">Usa solo el código, nunca el nombre real.</div>
+      <div class="err-msg" id="cod-e" hidden></div>
+      <label class="f" for="tiempo">Tiempo en la tarea (segundos)</label>
+      <input type="number" id="tiempo" min="0">
+      <label class="f" for="errs">Errores observados</label>
+      <input type="number" id="errs" min="0">
+      <label class="f" for="obs">Observaciones</label>
+      <textarea id="obs" rows="3"></textarea>
+      <div class="sv" id="reg-sv">Sin guardar</div>
+    </div>
+  </section>
+
+  <section data-step="3" hidden>
+    <h2 tabindex="-1">Revisión y cierre</h2>
+    <div class="card" id="review"></div>
+    <div id="closed" class="banner ok" hidden><strong>Sesión cerrada.</strong> Todos los datos quedaron registrados.</div>
+  </section>
+
+  <div class="row" id="nav">
+    <button id="prev">Anterior</button>
+    <button id="next" class="primary">Siguiente</button>
+  </div>
+  <p class="sv"><button id="reset" style="min-height:36px;font-size:13px">Reiniciar prueba</button></p>
+</main>
+<script>
+const STEPS = ['Procedimiento', 'Checklist', 'Registro', 'Cierre'];
+const ITEMS = [
+  { id:'i1', t:'Consentimiento verbal', req:true }, { id:'i2', t:'Dispositivo listo', req:true },
+  { id:'i3', t:'Grabación activa', req:false }, { id:'i4', t:'Tarea explicada', req:true },
+  { id:'i5', t:'Cronómetro a cero', req:true }, { id:'i6', t:'Hoja de notas', req:false },
+];
+const KEY = 'dashboard-ux-v1';
+const $ = id => document.getElementById(id);
+const blank = () => ({ step:0, proc:false, checks:{}, saved:{}, cod:'', tiempo:'', errs:'', obs:'', closed:false, max:0 });
+let S; try { S = Object.assign(blank(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { S = blank(); }
+const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+function announce(m) { const l = $('live'); l.textContent = ''; setTimeout(() => l.textContent = m, 30); }
+function msg(kind, html) { $('msg').innerHTML = html ? `<div class="banner ${kind}">${html}</div>` : ''; }
+
+const COD = /^P-\d{2}$/;
+const missingReq = () => ITEMS.filter(i => i.req && !S.checks[i.id]);
+function problems(step) {
+  if (step === 0 && !S.proc) return ['Marca "Leí el procedimiento" para continuar.'];
+  if (step === 1) { const m = missingReq(); if (m.length) return ['Faltan ítems obligatorios: ' + m.map(i => i.t).join(', ') + '.']; }
+  if (step === 2) { const p = []; if (!COD.test(S.cod)) p.push('El código de participante debe tener el formato P-NN, por ejemplo P-07.'); if (S.tiempo === '') p.push('Registra el tiempo en la tarea.'); if (S.errs === '') p.push('Registra los errores observados (puede ser 0).'); return p; }
+  return [];
+}
+function progress() {
+  const need = ITEMS.filter(i => i.req).length, done = need - missingReq().length;
+  let v = (S.proc ? 1 : 0) + done + (COD.test(S.cod) ? 1 : 0) + (S.tiempo !== '' ? 1 : 0) + (S.errs !== '' ? 1 : 0) + (S.closed ? 1 : 0);
+  return Math.round(100 * v / (1 + need + 3 + 1));
+}
+function renderStepper() {
+  $('stepper').innerHTML = STEPS.map((n, i) => {
+    const cur = i === S.step, locked = i > S.max, done = i < S.step || (S.closed && i === 3);
+    return `<li class="${done ? 'done' : ''}"><button data-s="${i}" ${cur ? 'aria-current="step"' : ''} ${locked ? 'aria-disabled="true"' : ''} aria-label="Paso ${i + 1} de 4: ${n}${cur ? ', paso actual' : done ? ', completado' : locked ? ', bloqueado hasta completar el anterior' : ''}"><span class="n"><span>${i + 1}</span></span>${n}</button></li>`;
+  }).join('');
+  $('cur').textContent = `Paso ${S.step + 1} de 4: ${STEPS[S.step]} (paso actual)`;
+  const p = progress(); $('pfill').style.width = p + '%'; $('ptxt').textContent = 'Progreso: ' + p + ' %'; $('pbar').setAttribute('aria-valuenow', p);
+}
+function renderGrid() {
+  $('grid').innerHTML = ITEMS.map(i => `<div class="item ${S.checks[i.id] || !i.req || !S.tried ? '' : 'missing'}"><label><input type="checkbox" data-c="${i.id}" ${S.checks[i.id] ? 'checked' : ''}> ${i.t}${i.req ? ' *' : ''}</label><span class="sv" id="sv-${i.id}">${S.saved[i.id] === (!!S.checks[i.id]) && i.id in S.saved ? 'Guardado' : 'Sin guardar'}</span></div>`).join('');
+}
+function renderReview() {
+  const m = missingReq(), okc = ITEMS.filter(i => i.req).length - m.length;
+  $('review').innerHTML = `<ul class="sum"><li>Procedimiento: ${S.proc ? 'leído' : '<strong>pendiente</strong>'}</li>
+    <li>Checklist obligatorio: ${okc} de ${ITEMS.filter(i => i.req).length}${m.length ? ' (falta: ' + m.map(i => i.t).join(', ') + ')' : ''}</li>
+    <li>Participante: ${S.cod || '<strong>sin código</strong>'}</li><li>Tiempo: ${S.tiempo || '—'} s</li><li>Errores: ${S.errs === '' ? '—' : S.errs}</li>
+    <li>Observaciones: ${S.obs ? 'registradas' : 'ninguna'}</li></ul>`;
+  $('closed').hidden = !S.closed;
+}
+function render(focus) {
+  document.querySelectorAll('[data-step]').forEach(s => s.hidden = +s.dataset.step !== S.step);
+  $('proc-ok').checked = S.proc; $('cod').value = S.cod; $('tiempo').value = S.tiempo; $('errs').value = S.errs; $('obs').value = S.obs;
+  renderStepper(); renderGrid(); renderReview();
+  $('prev').disabled = S.step === 0;
+  $('next').textContent = S.step === 3 ? 'Cerrar sesión' : 'Siguiente';
+  $('next').disabled = S.closed;
+  if (focus) document.querySelector(`[data-step="${S.step}"] h2`).focus();
+}
+function go(step, focus = true) {
+  S.step = step; S.max = Math.max(S.max, step); persist(); render(focus);
+  announce(`Paso ${step + 1} de 4: ${STEPS[step]}.`);
+}
+$('next').onclick = () => {
+  S.tried = true;
+  const p = problems(S.step);
+  if (p.length) {
+    msg('err', `<strong>No puedes avanzar todavía.</strong><ul class="sum">${p.map(x => `<li>${x}</li>`).join('')}</ul>`);
+    announce('No puedes avanzar. ' + p.join(' '));
+    renderGrid();
+    if (S.step === 2) { const bad = !COD.test(S.cod); $('cod').setAttribute('aria-invalid', bad); $('cod-e').hidden = !bad; $('cod-e').textContent = bad ? 'Formato esperado: P-07' : ''; if (bad) $('cod').focus(); }
+    return;
+  }
+  msg('', '');
+  if (S.step === 3) { S.closed = true; persist(); render(); msg('ok', '<strong>Sesión cerrada.</strong> Todos los datos quedaron registrados.'); announce('Sesión cerrada. Todos los datos quedaron registrados.'); return; }
+  go(S.step + 1);
+};
+$('prev').onclick = () => { msg('', ''); go(S.step - 1); };
+$('stepper').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const i = +b.dataset.s;
+  if (i > S.max) { msg('err', `<strong>Aún no puedes ir al paso ${i + 1}.</strong> Completa primero los pasos anteriores.`); announce('Paso bloqueado. Completa primero los pasos anteriores.'); return; }
+  msg('', ''); go(i);
+};
+$('proc-ok').onchange = e => { S.proc = e.target.checked; persist(); renderStepper(); };
+$('grid').onchange = e => {
+  const id = e.target.dataset.c; if (!id) return;
+  S.checks[id] = e.target.checked; persist();
+  $('sv-' + id).textContent = 'Sin guardar'; announce(`${ITEMS.find(i => i.id === id).t}: ${e.target.checked ? 'marcado' : 'desmarcado'}. Guardando.`);
+  setTimeout(() => { S.saved[id] = !!S.checks[id]; persist(); const el = $('sv-' + id); if (el) el.textContent = 'Guardado'; announce('Guardado.'); renderStepper(); }, 500);
+  renderStepper();
+};
+['cod', 'tiempo', 'errs', 'obs'].forEach(id => $(id).oninput = e => {
+  S[id] = e.target.value; $('reg-sv').textContent = 'Sin guardar';
+  if (id === 'cod') { $('cod').setAttribute('aria-invalid', 'false'); $('cod-e').hidden = true; }
+  clearTimeout(window._t); window._t = setTimeout(() => { persist(); $('reg-sv').textContent = 'Guardado'; renderStepper(); }, 500);
+});
+$('reset').onclick = () => { S = blank(); persist(); msg('', ''); render(true); announce('Prueba reiniciada.'); };
+render(false);
+</script>
+</body>
+</html>

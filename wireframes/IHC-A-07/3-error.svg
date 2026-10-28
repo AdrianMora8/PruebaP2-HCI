@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 640" width="360" height="640">
+<rect width="360" height="640" fill="#f4f4f4"/>
+<rect x="0" y="0" width="360" height="48" rx="0" fill="#e6e6e6" stroke="#222" stroke-width="1.5"/>
+<text x="16" y="30" font-size="16" text-anchor="start" font-weight="bold" fill="#222" font-family="Helvetica,Arial,sans-serif">Dashboard UX · Error</text>
+<text x="348" y="30" font-size="11" text-anchor="end" font-weight="normal" fill="#666" font-family="Helvetica,Arial,sans-serif">IHC-A-07</text>
+<circle cx="38" cy="78" r="13" fill="#fff" stroke="#222" stroke-width="1.5"/>
+<text x="38" y="83" font-size="12" text-anchor="middle" font-weight="bold" fill="#222" font-family="Helvetica,Arial,sans-serif">1</text>
+<text x="38" y="108" font-size="10" text-anchor="middle" font-weight="normal" fill="#222" font-family="Helvetica,Arial,sans-serif">Procedimiento</text>
+<line x1="52" y1="78" x2="94" y2="78" stroke="#222" stroke-width="1.5"/>
+<circle cx="122" cy="78" r="13" fill="#222" stroke="#222" stroke-width="1.5"/>
+<text x="122" y="83" font-size="12" text-anchor="middle" font-weight="bold" fill="#fff" font-family="Helvetica,Arial,sans-serif">2</text>
+<text x="122" y="108" font-size="10" text-anchor="middle" font-weight="bold" fill="#222" font-family="Helvetica,Arial,sans-serif">Checklist</text>
+<line x1="136" y1="78" x2="178" y2="78" stroke="#222" stroke-width="1.5"/>
+<circle cx="206" cy="78" r="13" fill="#fff" stroke="#222" stroke-width="1.5"/>
+<text x="206" y="83" font-size="12" text-anchor="middle" font-weight="bold" fill="#222" font-family="Helvetica,Arial,sans-serif">3</text>
+<text x="206" y="108" font-size="10" text-anchor="middle" font-weight="normal" fill="#222" font-family="Helvetica,Arial,sans-serif">Registro</text>
+<line x1="220" y1="78" x2="262" y2="78" stroke="#222" stroke-width="1.5"/>
+<circle cx="290" cy="78" r="13" fill="#fff" stroke="#222" stroke-width="1.5"/>
+<text x="290" y="83" font-size="12" text-anchor="middle" font-weight="bold" fill="#222" font-family="Helvetica,Arial,sans-serif">4</text>
+<text x="290" y="108" font-size="10" text-anchor="middle" font-weight="normal" fill="#222" font-family="Helvetica,Arial,sans-serif">Cierre</text>
+<text x="16" y="130" font-size="13" text-anchor="start" font-weight="bold" fill="#222" font-family="Helvetica,Arial,sans-serif">Paso 2 de 4: Checklist</text>
+<rect x="16" y="148" width="328" height="70" rx="6" fill="#ffe3e3" stroke="#b00020" stroke-width="2"/>
+<text x="28" y="174" font-size="14" text-anchor="start" font-weight="bold" fill="#b00020" font-family="Helvetica,Arial,sans-serif">No puedes avanzar todavía</text>
+<text x="28" y="196" font-size="12" text-anchor="start" font-weight="normal" fill="#222" font-family="Helvetica,Arial,sans-serif">Faltan 2 ítems obligatorios: Ítem 5 y Ítem 6.</text>
+<rect x="16" y="232" width="328" height="120" rx="6" fill="#fff" stroke="#222" stroke-width="1.5"/>
+<rect x="28" y="244" width="150" height="42" rx="6" fill="#fff" stroke="#b00020" stroke-width="2.5"/>
+<text x="40" y="270" font-size="12" text-anchor="start" font-weight="normal" fill="#222" font-family="Helvetica,Arial,sans-serif">Ítem 5 (falta)</text>
+<rect x="184" y="244" width="150" height="42" rx="6" fill="#fff" stroke="#b00020" stroke-width="2.5"/>
+<text x="196" y="270" font-size="12" text-anchor="start" font-weight="normal" fill="#222" font-family="Helvetica,Arial,sans-serif">Ítem 6 (falta)</text>
+<rect x="16" y="372" width="328" height="44" rx="6" fill="#222" stroke="#222" stroke-width="1.5"/><text x="180.0" y="399.0" font-size="14" text-anchor="middle" font-weight="bold" fill="#fff" font-family="Helvetica,Arial,sans-serif">Completar ítems pendientes</text>
+</svg>
