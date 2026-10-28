@@ -19,4 +19,9 @@ Prueba práctica integradora de IHC, Paralelo A. Tarjeta: _por definir_.
 - `evidencias/` capturas y curva emocional
 
 ## Cómo ejecutar el prototipo
-_Completar al terminar la fase 3._
+No requiere instalación. Abrir el archivo en el navegador:
+
+- CaféU: `prototipo/v1/cafeu/index.html` (opcional `?t=05` presupuesto USD 4,25, `?t=06` red inestable)
+- Dashboard UX: `prototipo/v1/dashboard/index.html`
+
+También se puede servir con `python3 -m http.server` desde la raíz y abrir `http://localhost:8000/prototipo/v1/cafeu/`.
