@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CaféU · Prototipo v2</title>
+<title>CaféU · Prototipo v3</title>
 <style>
   :root { --ink:#1f1a17; --bg:#faf6f1; --card:#fff; --line:#d9cfc4; --brand:#6f4e37; --brand-ink:#fff; --ok:#1b6e3a; --warn:#8a5a00; --err:#b00020; }
   * { box-sizing: border-box; }
@@ -79,6 +79,7 @@
   <section id="s-pedido" data-screen hidden>
     <h2 tabindex="-1">Mi pedido</h2>
     <div id="empty" class="card" hidden>Tu pedido está vacío. <button data-go="menu">Ir al menú</button></div>
+    <div id="undo" class="banner ok" hidden></div>
     <ul id="items" style="list-style:none;padding:0;margin:0"></ul>
     <div id="budget-bar" class="banner warn" hidden></div>
     <div class="card" id="summary">
@@ -138,6 +139,7 @@ const $ = id => document.getElementById(id);
 let cart = {};            // id -> cantidad
 let current = null;       // producto en detalle
 let busy = false;
+let lastRemoved = null;     // para Deshacer
 
 function announce(msg, urgent) { const el = $(urgent ? 'alert' : 'live'); el.textContent = ''; setTimeout(() => el.textContent = msg, 30); }
 function total() { return Object.entries(cart).reduce((s, [id, q]) => s + PRODUCTS.find(p => p.id === id).price * q, 0); }
@@ -231,7 +233,7 @@ document.addEventListener('click', e => {
   if (del) askDelete(del.dataset.del, del);
 });
 function changed(id, which) {
-  update(); renderCart();
+  clearUndo(); update(); renderCart();
   const sel = `[data-${which}="${id}"]`; const b = document.querySelector(sel); if (b) b.focus();
   announce(`${PRODUCTS.find(p => p.id === id).name}: ${cart[id]}. Total actualizado: ${money(total())}.`);
 }
@@ -245,12 +247,26 @@ $('dlg-no').onclick = () => { $('dlg').close(); const b = document.querySelector
 $('dlg').addEventListener('cancel', () => setTimeout(() => { const b = document.querySelector(`[data-del="${pendingDel}"]`); if (b) b.focus(); }));
 $('dlg-yes').onclick = () => {
   const name = PRODUCTS.find(p => p.id === pendingDel).name;
-  delete cart[pendingDel]; $('dlg').close(); update(); renderCart();
+  lastRemoved = { id: pendingDel, qty: cart[pendingDel], index: Object.keys(cart).indexOf(pendingDel) };
+  delete cart[pendingDel]; $('dlg').close(); update(); renderCart(); showUndo(name);
   const keys = Object.keys(cart);
   if (keys.length) { const target = keys[Math.min(lastFocusIndex, keys.length - 1)]; document.querySelector(`[data-del="${target}"]`).focus(); }
   else $('s-pedido').querySelector('h2').focus();
-  announce(`${name} quitado. Total ${money(total())}.`);
+  announce(`${name} quitado. Total ${money(total())}. Puedes deshacer.`);
 };
+
+function clearUndo() { lastRemoved = null; $('undo').hidden = true; }
+function showUndo(name) {
+  const u = $('undo'); u.hidden = false;
+  u.innerHTML = `<strong>${name} quitado.</strong> <button id="undo-btn">Deshacer</button>`;
+  $('undo-btn').onclick = () => {
+    const r = lastRemoved; if (!r) return;
+    const entries = Object.entries(cart); entries.splice(r.index, 0, [r.id, r.qty]); cart = Object.fromEntries(entries);
+    clearUndo(); update(); renderCart();
+    const b = document.querySelector(`[data-del="${r.id}"]`); if (b) b.focus();
+    announce(`${PRODUCTS.find(p => p.id === r.id).name} restaurado. Total ${money(total())}.`);
+  };
+}
 
 // ---- confirmar (pendiente / confirmado / no confirmado)
 function setStatus(kind, msg) {
@@ -280,7 +296,7 @@ function finish() {
   $('conf-total').textContent = money(total());
   show('conf'); announce(`Pedido recibido. Código ${code}. Total ${money(total())}.`);
 }
-$('again').onclick = () => { cart = {}; attempts = 0; $('al-ok').checked = false; update(); show('menu'); };
+$('again').onclick = () => { cart = {}; attempts = 0; clearUndo(); $('al-ok').checked = false; update(); show('menu'); };
 
 // ---- inicio
 if (BUDGET !== null) { const n = $('budget-note'); n.hidden = false; n.textContent = 'Tu presupuesto es de ' + money(BUDGET) + '. Te avisaremos si lo superas.'; }
